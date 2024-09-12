@@ -42,14 +42,15 @@ struct Args {
     #[arg(short, long, default_value_t = 80)]
     port: u16,
 }
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let http_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "CONNECT", "TRACE"];
     let args = Args::parse();
 
-    // if !http_methods.contains(&args.method.as_str()) {
-    //     return Err(String::from("Method not valid"));
-    // }
+    if !http_methods.contains(&args.method.as_str()) {
+        panic!("Method not valid")
+    }
     let url = args.url.parse::<hyper::Uri>()?;
     let host = url.host().expect("No host found in URL");
     let port = args.port;
@@ -71,6 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let authority = url.authority().unwrap().clone();
 
     let req = Request::builder()
+        .method(args.method.as_str())
         .uri(url)
         .header(hyper::header::HOST, authority.as_str())
         .body(Empty::<Bytes>::new())?;
