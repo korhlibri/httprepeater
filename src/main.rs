@@ -1,11 +1,7 @@
 use clap::Parser;
-use http_body_util::Empty;
-use hyper::Request;
-use hyper::body::Bytes;
-use hyper_util::rt::TokioIo;
-use tokio::net::TcpStream;
-use http_body_util::BodyExt;
-use tokio::io::{AsyncWriteExt as _, self};
+// use tokio::net::TcpStream;
+// use tokio::io::{AsyncWriteExt as _, self};
+use reqwest;
 
 /// Make an HTTP request and receive data characteristics
 #[derive(Parser, Debug)]
@@ -35,12 +31,6 @@ struct Args {
     /// Example: -u "http://example.com"
     #[arg(short, long)]
     url: String,
-
-    /// Port to make the request to.
-    /// 
-    /// Example: -d '{"username":"john","password":"123456"}'
-    #[arg(short, long, default_value_t = 80)]
-    port: u16,
 }
 
 #[tokio::main]
@@ -51,43 +41,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if !http_methods.contains(&args.method.as_str()) {
         panic!("Method not valid")
     }
-    let url = args.url.parse::<hyper::Uri>()?;
-    let host = url.host().expect("No host found in URL");
-    let port = args.port;
 
-    let address = format!("{}:{}", host, port);
+    let mut client = reqwest::ClientBuilder::new();
+    client = client.redirect(reqwest::redirect::Policy::none());
+    let clientready = client.build().unwrap();
+    let mut req = clientready.request(reqwest::Method::from_bytes(args.method.as_bytes()).unwrap(), args.url.as_str());
 
-    let stream = TcpStream::connect(address).await?;
-
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            println!("Connection failed: {:?}", err);
+    for header in args.header {
+        let splitheader: Vec<&str> = header.split(": ").collect();
+        if splitheader.len() != 2 {
+            continue
         }
-    });
-
-    let authority = url.authority().unwrap().clone();
-
-    let req = Request::builder()
-        .method(args.method.as_str())
-        .uri(url)
-        .header(hyper::header::HOST, authority.as_str())
-        .body(Empty::<Bytes>::new())?;
-
-    let mut res = sender.send_request(req).await?;
-
-    println!("Response status: {}", res.status());
-
-    while let Some(next) = res.frame().await {
-        let frame = next?;
-        if let Some(chunk) = frame.data_ref() {
-            io::stdout().write_all(chunk).await?;
-        }
+        req = req.header(splitheader[0], splitheader[1]);
     }
 
+    if let Some(body) = args.data {
+        req = req.body(body);
+    }
+
+    let resp = req.send().await?;
+
+    let status = resp.status();
+    let text = resp.text().await?;
+
+    println!("Status code: {}", status);
+    println!("{:#}", text);
 
     Ok(())
 }
