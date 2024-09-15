@@ -50,9 +50,15 @@ struct Args {
 
     /// Displays the response headers and body.
     /// 
-    /// Example: -b '{"username":"john","password":"##123456##"}' -d "##" --verbose
+    /// Example: -u "http://example.com" --verbose
     #[arg(long)]
     verbose: bool,
+
+    /// Follows the redirect status codes.
+    /// 
+    /// Example: -u "http://example.com" --allowredirects
+    #[arg(long)]
+    allowredirects: bool,
 }
 
 #[tokio::main]
@@ -73,7 +79,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     }
 
     let mut client = reqwest::ClientBuilder::new();
-    client = client.redirect(reqwest::redirect::Policy::none());
+    if !args.allowredirects {
+        client = client.redirect(reqwest::redirect::Policy::none());
+    }
     let clientready = client.build().unwrap();
 
     // TODO: IMPLEMENT NON-BLOCKING THREADS
