@@ -59,9 +59,9 @@ struct Args {
     #[arg(short, long)]
     allowredirects: bool,
 
-    /// Amount of threads to use in computations.
+    /// Amount of threads to use for sending http requests.
     /// 
-    /// Example: -u "http://example.com" --allowredirects
+    /// Example: -u "http://example.com" -t 4
     #[arg(short, long, default_value_t = 1)]
     threads: u32,
 }
