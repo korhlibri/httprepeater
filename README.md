@@ -1,5 +1,5 @@
 # httprepeater
-Repeats HTTP requests modifying headers/body using a wordlist.
+Repeats HTTP requests while modifying headers/body using a wordlist.
 
 <div>
   <picture>
