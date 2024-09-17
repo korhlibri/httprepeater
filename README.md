@@ -1,11 +1,7 @@
 # httprepeater
 Repeats HTTP requests while modifying headers/body using a wordlist.
 
-<div>
-  <picture>
-    srcset="https://raw.githubusercontent.com/korhlibri/httprepeater/master/assets/out.png">
-  </picture>
-</div>
+<img src="https://raw.githubusercontent.com/korhlibri/httprepeater/master/assets/out.png">
 
 ## Compile
 This program can be compiled using cargo.
